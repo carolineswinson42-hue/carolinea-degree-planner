@@ -1,0 +1,16 @@
+.streamlit/secrets.toml
+.env
+__pycache__/
+*.pyc
+.DS_Store
+student_progress.json
+semester_plan.json
+app_backup.py
+*_backup.json
+
+degree_profile.json
+*.bak
+*_old.json
+carolina_degree_planner_dashboard_corner_chat.py
+test_ai.py
+.streamlit/

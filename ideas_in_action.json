@@ -1,0 +1,157 @@
+
+{
+  "metadata": {
+    "name": "UNC General Education and University Requirements",
+    "catalog_year": "2025-2026"
+  },
+  "first_year_foundations": [
+    {
+      "id": "FY_SEMINAR_LAUNCH",
+      "name": "First-Year Seminar or First-Year Launch",
+      "type": "course_requirement",
+      "courses": [],
+      "status": "Not verified"
+    },
+    {
+      "id": "TRIPLE_I",
+      "name": "Ideas, Information, and Inquiry (Triple-I)",
+      "type": "course_requirement",
+      "courses": [],
+      "notes": "Verify the applicable Triple-I course and Data Literacy Lab requirements.",
+      "status": "Not verified"
+    },
+    {
+      "id": "ENGLISH_COMPOSITION",
+      "name": "English Composition",
+      "type": "course_requirement",
+      "courses": [
+        "ENGL 105",
+        "ENGL 105I"
+      ],
+      "status": "Not verified"
+    }
+  ],
+  "focus_capacities": [
+    {
+      "id": "FC_AESTHETIC",
+      "name": "Aesthetic and Interpretive Analysis",
+      "type": "focus_capacity",
+      "courses": []
+    },
+    {
+      "id": "FC_CREATIVE",
+      "name": "Creative Expression, Practice, and Production",
+      "type": "focus_capacity",
+      "courses": []
+    },
+    {
+      "id": "FC_PAST",
+      "name": "Engagement with the Human Past",
+      "type": "focus_capacity",
+      "courses": []
+    },
+    {
+      "id": "FC_ETHICS",
+      "name": "Ethical and Civic Values",
+      "type": "focus_capacity",
+      "courses": []
+    },
+    {
+      "id": "FC_GLOBAL",
+      "name": "Global Understanding and Engagement",
+      "type": "focus_capacity",
+      "courses": []
+    },
+    {
+      "id": "FC_NATURAL_SCIENCE",
+      "name": "Natural Sciences",
+      "type": "focus_capacity",
+      "courses": []
+    },
+    {
+      "id": "FC_POWER",
+      "name": "Power, Institutions, and Structures",
+      "type": "focus_capacity",
+      "courses": []
+    },
+    {
+      "id": "FC_QUANT",
+      "name": "Quantitative Reasoning",
+      "type": "focus_capacity",
+      "courses": []
+    },
+    {
+      "id": "FC_RESEARCH",
+      "name": "Research and Discovery",
+      "type": "focus_capacity",
+      "courses": []
+    },
+    {
+      "id": "FC_US_DIVERSITY",
+      "name": "U.S. Diversity",
+      "type": "focus_capacity",
+      "courses": []
+    }
+  ],
+  "reflection_and_integration": [
+    {
+      "id": "RI_COMMUNICATION",
+      "name": "Communication Beyond Carolina",
+      "type": "reflection_integration",
+      "courses": []
+    },
+    {
+      "id": "RI_HIGH_IMPACT",
+      "name": "High-Impact Experience",
+      "type": "reflection_integration",
+      "courses": []
+    }
+  ],
+  "other_general_education": [
+    {
+      "id": "GLOBAL_LANGUAGE",
+      "name": "Global Language through Level 3",
+      "type": "general_education",
+      "courses": []
+    },
+    {
+      "id": "LIFETIME_FITNESS",
+      "name": "Lifetime Fitness",
+      "type": "general_education",
+      "courses": []
+    },
+    {
+      "id": "SUPPLEMENTAL_GEN_ED",
+      "name": "Supplemental General Education",
+      "type": "general_education",
+      "notes": "Check whether this applies to the student's degree program.",
+      "courses": []
+    }
+  ],
+  "university_wide_degree_requirements": [
+    {
+      "id": "MINIMUM_CREDITS",
+      "name": "Minimum Total Degree Credits",
+      "type": "graduation_requirement",
+      "minimum_credits": 120
+    },
+    {
+      "id": "UNC_CREDITS",
+      "name": "Minimum Credits Earned at UNC-Chapel Hill",
+      "type": "graduation_requirement",
+      "minimum_credits": 45
+    },
+    {
+      "id": "FINAL_RESIDENCY",
+      "name": "Final 24 of Last 30 Credits",
+      "type": "graduation_requirement",
+      "notes": "Verify the applicable residency rules."
+    },
+    {
+      "id": "MINIMUM_GPA",
+      "name": "Minimum Cumulative UNC GPA",
+      "type": "graduation_requirement",
+      "minimum_gpa": 2.0
+    }
+  ]
+}
