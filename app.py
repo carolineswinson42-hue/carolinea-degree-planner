@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 import streamlit as st
+from streamlit_local_storage import LocalStorage
 
 
 # ============================================================
@@ -49,19 +50,80 @@ def load_json(file_path, default):
         return default
 
 
+# Student data stays in this visitor's Streamlit session, never in shared
+# server-side JSON files. Public catalog files remain read-only.
+USER_DATA_KEYS = {
+    PROGRESS_FILE: "student_progress",
+    PLAN_FILE: "semester_plan",
+    PROFILE_FILE: "degree_profile",
+}
+
+def load_student_data(file_path):
+    key = USER_DATA_KEYS.get(file_path, "ideas_in_action_progress")
+    if key not in st.session_state:
+        st.session_state[key] = {}
+    return st.session_state[key]
+
+
 def save_json(file_path, data):
-    try:
-        with open(file_path, "w", encoding="utf-8") as file:
-            json.dump(data, file, indent=2)
-    except OSError as error:
-        st.error(f"Could not save {file_path.name}: {error}")
+    # Preserve existing save callbacks without writing any visitor data to disk.
+    key = USER_DATA_KEYS.get(file_path)
+    if key is None and file_path == IDEAS_PROGRESS_FILE:
+        key = "ideas_in_action_progress"
+    if key is not None:
+        st.session_state[key] = data
+
+
+# Browser-local storage: one independent planner per browser profile.
+# Wait for the asynchronous browser component to respond before rendering
+# editable widgets, so an empty initial session cannot overwrite saved work.
+BROWSER_STORAGE_KEY = "carolina_degree_planner_progress_v1"
+BROWSER_FIELDS = (
+    "degree_profile", "student_progress", "semester_plan",
+    "ideas_in_action_progress",
+)
+browser_storage = LocalStorage()
+if not st.session_state.get("browser_storage_loaded", False):
+    browser_items = browser_storage.getAll(key="carolina_browser_initial_load")
+    if not isinstance(browser_items, dict):
+        st.info("Loading your saved planner from this browser…")
+        st.stop()
+    stored_backup = browser_items.get(BROWSER_STORAGE_KEY)
+    if isinstance(stored_backup, str):
+        try:
+            stored_backup = json.loads(stored_backup)
+        except json.JSONDecodeError:
+            stored_backup = None
+    if isinstance(stored_backup, dict) and all(
+        isinstance(stored_backup.get(field), dict) for field in BROWSER_FIELDS
+    ):
+        for field in BROWSER_FIELDS:
+            st.session_state[field] = stored_backup[field]
+    st.session_state["browser_storage_loaded"] = True
+    st.rerun()
+
+
+def browser_backup():
+    return {
+        "format": "carolina-degree-planner-v1",
+        **{field: st.session_state.get(field, {}) for field in BROWSER_FIELDS},
+    }
+
+
+def sync_browser_backup():
+    serialized = json.dumps(browser_backup(), sort_keys=True)
+    if serialized != st.session_state.get("browser_last_saved"):
+        browser_storage.setItem(
+            BROWSER_STORAGE_KEY, serialized, key="carolina_browser_auto_save"
+        )
+        st.session_state["browser_last_saved"] = serialized
 
 
 program_data = load_json(PROGRAMS_FILE, [])
 requirements = load_json(REQUIREMENTS_FILE, {})
-saved_progress = load_json(PROGRESS_FILE, {})
-semester_plan = load_json(PLAN_FILE, {})
-saved_profile = load_json(PROFILE_FILE, {})
+saved_progress = load_student_data(PROGRESS_FILE)
+semester_plan = load_student_data(PLAN_FILE)
+saved_profile = load_student_data(PROFILE_FILE)
 
 # Load Ideas in Action data once, so both the dashboard and tracker can use it.
 IDEAS_FILE = BASE_DIR / "ideas_in_action.json"
@@ -81,7 +143,7 @@ try:
 except (FileNotFoundError, json.JSONDecodeError, OSError):
     ideas_data = {}
 
-ideas_progress = load_json(IDEAS_PROGRESS_FILE, {})
+ideas_progress = load_student_data(IDEAS_PROGRESS_FILE)
 if not isinstance(ideas_progress, dict):
     ideas_progress = {}
 
@@ -360,6 +422,53 @@ st.write(
     "find courses, and organize your semesters in one place."
 )
 
+st.subheader("Save or restore your planner")
+st.caption("No account required. Your planner automatically saves in this browser. You can also download a backup to move to another device.")
+
+backup = {
+    **browser_backup(),
+}
+
+save_col, restore_col = st.columns(2)
+with save_col:
+    st.download_button(
+        "⬇️ Download my progress",
+        data=json.dumps(backup, indent=2),
+        file_name="carolina_degree_planner_progress.json",
+        mime="application/json",
+        use_container_width=True,
+    )
+with restore_col:
+    uploaded_backup = st.file_uploader(
+        "Restore saved progress (JSON)",
+        type=["json"],
+        key="progress_backup_upload",
+    )
+    if uploaded_backup is not None and st.button("Restore this backup", use_container_width=True):
+        try:
+            if uploaded_backup.size > 2_000_000:
+                raise ValueError("Backup is too large (2 MB maximum).")
+            restored = json.loads(uploaded_backup.getvalue().decode("utf-8"))
+            if not isinstance(restored, dict) or restored.get("format") != "carolina-degree-planner-v1":
+                raise ValueError("This isn't a Carolina Degree Planner backup.")
+            fields = ("degree_profile", "student_progress", "semester_plan", "ideas_in_action_progress")
+            if any(not isinstance(restored.get(field), dict) for field in fields):
+                raise ValueError("The backup has missing or invalid progress sections.")
+            # Clear old widget state so imported statuses and degree choices display correctly.
+            for key in list(st.session_state.keys()):
+                if key.startswith(("status::", "ideas_status_widget_")) or key in ("selected_majors", "selected_minors", "advisor_messages"):
+                    del st.session_state[key]
+            for field in fields:
+                st.session_state[field] = restored[field]
+            st.session_state["restore_success"] = True
+            st.session_state.pop("browser_last_saved", None)
+            st.rerun()
+        except (ValueError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            st.error(f"Could not restore backup: {error}")
+
+if st.session_state.pop("restore_success", False):
+    st.success("Your saved progress has been restored.")
+
 st.divider()
 
 
@@ -609,7 +718,7 @@ else:
     st.caption("No Ideas in Action items are available to track.")
 
 # ============================================================
-# 12. AI ACADEMIC ADVISOR — LOCAL OLLAMA
+# 12. AI ACADEMIC ADVISOR — GROQ CLOUD
 # ============================================================
 
 # Refresh the advisor's context from the current saved degree planner data.
@@ -652,7 +761,7 @@ if "advisor_messages" not in st.session_state:
 left_space, advisor_corner = st.columns([5, 2])
 with advisor_corner:
     with st.popover("💬 AI Academic Advisor", use_container_width=True):
-        st.caption("Local Ollama · Suggestions are not official UNC advising")
+        st.caption("Groq cloud AI · Suggestions are not official UNC advising")
         if st.button("Clear conversation", key="clear_advisor_chat"):
             st.session_state.advisor_messages = []
             st.rerun()
@@ -673,24 +782,37 @@ with advisor_corner:
             st.session_state.advisor_messages.append(
                 {"role": "user", "content": question.strip()}
             )
-            with st.spinner("Thinking locally with Ollama..."):
+            with st.spinner("Thinking with Groq..."):
                 try:
-                    from ollama import chat
-                    response = chat(
-                        model="llama3.2:3b",
+                    from groq import Groq
+
+                    api_key = st.secrets.get("GROQ_API_KEY")
+                    if not api_key:
+                        raise ValueError(
+                            "GROQ_API_KEY is missing. Add it to .streamlit/secrets.toml "
+                            "locally or to Streamlit Community Cloud Secrets when deployed."
+                        )
+
+                    client = Groq(api_key=api_key)
+                    response = client.chat.completions.create(
+                        model="openai/gpt-oss-20b",
                         messages=[
                             {"role": "system", "content": system_prompt},
                             *st.session_state.advisor_messages[-12:],
                         ],
+                        temperature=0.3,
+                        max_completion_tokens=1200,
                     )
-                    answer = response["message"]["content"]
+                    answer = response.choices[0].message.content
+                    if not answer:
+                        raise ValueError("Groq returned an empty response. Please try again.")
                     st.session_state.advisor_messages.append(
                         {"role": "assistant", "content": answer}
                     )
                     st.rerun()
                 except Exception as error:
                     st.session_state.advisor_messages.pop()
-                    st.error(f"Ollama couldn't respond: {error}")
+                    st.error(f"Groq couldn't respond: {error}")
 
 
 # ============================================================
@@ -1345,7 +1467,7 @@ st.divider()
 
 st.caption(
     "Carolina Degree Planner | Your profile, course progress, "
-    "and semester plan are saved in separate JSON files."
+    "and semester plan are saved in your browser (not shared server files)."
 )
 
 st.caption(
@@ -1357,3 +1479,6 @@ st.caption(
 
 
 
+
+# Sync after all widgets have had a chance to update session data.
+sync_browser_backup()
