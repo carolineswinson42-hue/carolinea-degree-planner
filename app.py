@@ -84,7 +84,7 @@ BROWSER_FIELDS = (
 )
 browser_storage = LocalStorage()
 if not st.session_state.get("browser_storage_loaded", False):
-    browser_items = browser_storage.getAll(key="carolina_browser_initial_load")
+    browser_items = browser_storage.getAll()
     if not isinstance(browser_items, dict):
         st.info("Loading your saved planner from this browser…")
         st.stop()
